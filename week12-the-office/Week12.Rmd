@@ -1,0 +1,42 @@
+---
+title: "Week 12 - The Office"
+author: "Emily Darling"
+date: "16/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+```
+
+#Load data
+
+```{r load-data}
+
+#install.packages("schrute")
+library(schrute)
+
+data <- schrute::theoffice %>% 
+  clean_names() %>% 
+  as_tibble()
+```
+
+#Explore data
+
+```{r explore}
+data
+
+names(data)
+
+data %>% 
+  tabyl(character) %>% 
+  arrange(-n) %>% 
+  slice(1:10)
+
+
+```
+
+
