@@ -10,16 +10,37 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(janitor)
+
+options(scipen=999)
 ```
 
 #Load data
 
-```{r load-data}
+```{rget-data}
+# Get the Data 
+
+office_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-17/office_ratings.csv')
+
+# Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
+# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
+
+# Either ISO-8601 date or year/week works!
+
+# Install via 
+# devtools::install_github("thebioengineer/tidytuesdayR")
+# 
+# tuesdata <- tidytuesdayR::tt_load('2020-03-17')
+# tuesdata <- tidytuesdayR::tt_load(2020, week = 12)
+# 
+# 
+# office_ratings <- tuesdata$office_ratings
+
+office_ratings
 
 #install.packages("schrute")
 library(schrute)
 
-data <- schrute::theoffice %>% 
+dialogue <- schrute::theoffice %>% 
   clean_names() %>% 
   as_tibble()
 ```
@@ -27,16 +48,34 @@ data <- schrute::theoffice %>%
 #Explore data
 
 ```{r explore}
-data
+office_ratings
+dialogue
 
-names(data)
-
-data %>% 
+dialogue %>% 
   tabyl(character) %>% 
   arrange(-n) %>% 
   slice(1:10)
 
+dialogue %>% 
+  filter(character == "Pam") %>% 
+  distinct(text)
 
+
+head(dialogue$text_w_direction)
+head(dialogue$text)
+
+dialogue_token <- dialogue %>%
+  tidytext::unnest_tokens(word, text)
+
+dialogue_token
 ```
+
+
+Ideas for data visualization
+
+* How many words do the top characters speak, is there a difference by gender? 
+* Does this change over seasons? 
+* Per episode, how is the number of words spoken by female characters associated with rating?
+
 
 
