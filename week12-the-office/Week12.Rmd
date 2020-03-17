@@ -137,6 +137,73 @@ Now, sum words by character and by episode
 
 ```{r sum-words}
 
+data <- dialogue_top10 %>% 
+  group_by(season, 
+           episode, 
+           air_date, 
+           imdb_rating, 
+           character, 
+           gender) %>% 
+  count() %>% 
+  ungroup() %>% 
+  group_by(season, 
+           episode) %>% 
+  mutate(total_words = sum(n), 
+         prop_words = n / total_words) %>% 
+  ungroup() %>% 
+  group_by(season, 
+           episode, 
+           air_date, 
+           imdb_rating, 
+           gender) %>% 
+  slice(1:2) %>% #slice by top 2 female and top 2 males
+  arrange(season, 
+          episode, 
+          gender)
+
+data
+
+```
+
+Some plots
+
+```{r plots}
+#overall be gender, across all seasons
+ggplot(data = data,
+       aes(x = gender, y= prop_words)) + 
+  geom_boxplot(aes(fill = gender))
+
+summary <- data %>% 
+  group_by(episode, gender) %>% 
+  summarize(mean = mean(prop_words)) %>% 
+  group_by(gender) %>% 
+  summarize(mean = mean(mean))
+
+summary
+
+#top 2 female characters speak 46% of words that top 2 men speak in the Office, averaged over all seasons
+summary$mean[1] / summary$mean[2]* 100 
+
+#over season
+summary_season <- data %>% 
+  group_by(season, episode, gender) %>% 
+  summarize(mean = mean(prop_words)) %>% 
+  group_by(season, gender) %>% 
+  summarize(mean = mean(mean)) 
+
+summary_season
+
+ggplot(data = summary_season, 
+       aes(x = as.factor(season), y = mean, group = gender)) +
+  geom_point(aes(colour =  gender), 
+             size = 2) +
+  geom_line(aes(colour = gender), size = 1) +
+  theme_minimal(base_size = 16) + 
+  xlab("Season") + 
+  ylab("Mean proportion of words spoken by top 2 characters")
+
+
+
 ```
 
 
