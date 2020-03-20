@@ -1,0 +1,156 @@
+---
+title: "Week 12"
+author: "S Borrelle"
+date: "17/03/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+theme_set(theme_light())
+```
+
+#Load character line data
+
+```{r load-data}
+
+#install.packages("schrute")
+library(schrute)
+
+data <- schrute::theoffice %>% 
+  clean_names() %>% 
+  as_tibble()
+```
+
+Get the Data
+```{r}
+
+
+office_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-17/office_ratings.csv')
+
+# Or read in with tidytuesdayR package (https://github.com/thebioengineer/tidytuesdayR)
+# PLEASE NOTE TO USE 2020 DATA YOU NEED TO USE tidytuesdayR version ? from GitHub
+# Either ISO-8601 date or year/week works!
+
+devtools::install_github("thebioengineer/tidytuesdayR")
+
+tuesdata <- tidytuesdayR::tt_load('2020-03-17')
+tuesdata <- tidytuesdayR::tt_load(2020, week = 12)
+
+
+office_ratings <- tuesdata$office_ratings
+
+```
+
+#Explore data
+```{r}
+library(ggrepel)
+#average rating accorss seasons
+office_ratings %>% 
+  group_by(season) %>% 
+  summarise(avg_rating =mean(imdb_rating)) %>% 
+  ggplot(aes(season, avg_rating)) +
+  geom_line() + 
+  scale_x_continuous(breaks = 1:9)
+
+#look at the IMDB rating accross seasons and average rating
+office_ratings %>% 
+  mutate(title = fct_inorder(title),
+         episode_number = row_number()) %>% 
+  ggplot(aes(episode_number, imdb_rating)) +
+  geom_line()+
+  geom_smooth() +
+  geom_point(aes(color = factor(season), size=total_votes))+
+  geom_text(aes(label = title), check_overlap = T, hjust =1) + #labe the episode name
+  expand_limits(x = -10)+
+  theme(panel.grid.major.x= element_blank(), 
+        legend.position = "none")+
+  labs( x= "Episode",
+        y =" IMDB rating", 
+        title = "The office ratings over time")
+```
+
+#Explore data transcripts
+
+```{r explore}
+dialogue <- schrute::theoffice %>% 
+  clean_names() %>% 
+  as_tibble()
+```
+#Explore data
+
+```{r explore}
+office_ratings
+dialogue
+dialogue %>% 
+  tabyl(character) %>% 
+  arrange(-n) %>% 
+  slice(1:10)
+dialogue %>% 
+  filter(character == "Pam") %>% 
+  distinct(text)
+head(dialogue$text_w_direction)
+head(dialogue$text)
+dialogue_token <- dialogue %>%
+  tidytext::unnest_tokens(word, text)
+dialogue_token
+```
+
+
+Ideas for data visualization
+
+* How many words do the top characters speak, is there a difference by gender? 
+* Does this change over seasons? 
+* Per episode, how is the number of words spoken by female characters associated with rating?
+
+First, subset to top 10 characters that speak the most words on the entire show. And add gender.
+
+```{r find-top10-add-gender}
+#Choose top 10 characters with most words
+#Dialogue is 'tokenized'- each line is a word
+top10_chars <- dialogue %>% 
+  tabyl(character) %>% 
+  arrange(-n) %>% 
+  slice(1:10) %>% 
+  pull(character)
+#Set gender for each character
+top10_gender <- c("m", "m", "m", "f", "m", "f", "m", "f", "m", "m")
+top10_gender
+ 
+#Make KEY for character and gender
+top10_chars <- as_tibble(top10_chars) %>% 
+  cbind(top10_gender) %>% 
+    rename("character" = value, 
+           "gender" = top10_gender) %>% 
+  mutate(gender = case_when(
+    gender == "m" ~ "Male", 
+    TRUE ~ "Female"))
+top10_chars
+#Filter words to top 10 characters, and join gender to dataset
+dialogue_top10 <- dialogue %>% 
+  filter(character %in% top10_chars$character) %>% 
+  left_join(top10_chars)
+unique(dialogue_top10$character)
+dialogue_top10
+  
+```
+
+Next, join in ratings and season date
+
+```{r join-ratings}
+office_ratings
+str(office_ratings)
+str(dialogue_top10)
+dialogue_top10 <- dialogue_top10 %>% 
+  mutate(season = as.numeric(season), 
+         episode = as.numeric(episode)) %>% 
+  left_join(office_ratings, 
+            by = c("season", "episode"))
+dialogue_top10
+```
+ 
+ 
